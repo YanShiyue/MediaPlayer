@@ -11,10 +11,12 @@ import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,7 +35,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         Button order=(Button)findViewById(R.id.order);//播放顺序
         order.setOnClickListener(this);
-        ListView list=(ListView)findViewById(R.id.list);//歌曲列表
         Button last=(Button)findViewById(R.id.last);//上一首
         last.setOnClickListener(this);
         Button status=(Button)findViewById(R.id.status);//播放状态
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         //点击歌曲列表，播放
+        ListView list=(ListView)findViewById(R.id.list);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -59,7 +61,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 TextView ing=(TextView)findViewById(R.id.ing);//正在播放的歌曲
                 ing.setText(song.getSong());
                 initMediaPlayer(song.getPath());//初始化MediaPlayer
+                TextView all_time=(TextView)findViewById(R.id.all_time);
+                all_time.setText(mediaPlayer.getDuration()+"");
             }
+        });
+
+        //歌曲播放进度
+        final SeekBar process=(SeekBar)findViewById(R.id.process);
+        process.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                //Log.d("aa process: ",progress+"");
+                mediaPlayer.seekTo(mediaPlayer.getDuration()/10000*progress);
+                TextView cur_time=(TextView)findViewById(R.id.cur_time);
+                cur_time.setText(mediaPlayer.getCurrentPosition()+"");
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) { mediaPlayer.start();}
         });
     }
 
@@ -113,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         listView.setAdapter(adapter);
     }
 
-    //初始化MediaPlayer
+    //MediaPlayer启动
     private void initMediaPlayer(String playPath){
         File file=new File(playPath);
         try {
@@ -121,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mediaPlayer=new MediaPlayer();
                 mediaPlayer.setDataSource(file.getPath());//指定音频文件的播放路径
                 mediaPlayer.prepare();//MediaPlayer进入准备状态
+                mediaPlayer.start();
             }
             else if(mediaPlayer.isPlaying()){
                 try{
@@ -156,6 +177,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Toast.makeText(MainActivity.this,"拒绝权限将无法使用程序",Toast.LENGTH_SHORT).show();
                     finish();
                 }
+        }
+    }
+
+    //退出活动释放mediaplayer
+    protected void onDestory(){
+        super.onDestroy();
+        if(mediaPlayer!=null){
+            mediaPlayer.stop();
+            mediaPlayer.release();
         }
     }
 }
